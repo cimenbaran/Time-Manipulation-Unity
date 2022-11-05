@@ -23,10 +23,7 @@ public class TimeFrameAffectedObject : MonoBehaviour
 
     private void Start()
     {
-        if (isNewVelocityProtected)
-        {
-            objectRigidbody.AddForce(new Vector3(-500, 0, 0));
-        }
+        objectRigidbody.AddForce(new Vector3(0f, 0f, 1000f));
     }
     private void OnEnable()
     {
@@ -60,27 +57,22 @@ public class TimeFrameAffectedObject : MonoBehaviour
 
             // Calculate required acceleration to maintain current velocity
             Vector3 acceleration = lastVelocity / Time.fixedDeltaTime;
-            //Debug.Log(lastTransformValues.pos);
-            //Debug.Log(posChange);
-            //Debug.Log(lastVelocity);
-            //
-            //Debug.Log(acceleration);
-            // Apply force
-            if(isNewVelocityProtected)
-            {
-                acceleration *= -1;
-            }
-            objectRigidbody.AddForce(acceleration);
 
+
+            Debug.Log(transform.name + ": " + acceleration.ToString());
 
             // Rotation Change
             Quaternion rotationChange = lastTransformValues.rotation* Quaternion.Inverse(transform.rotation);
             
             if(isNewVelocityProtected)
             {
+                acceleration *= -1;
                 rotationChange = Quaternion.Inverse(rotationChange);
             }
 
+            // Apply force
+
+            objectRigidbody.AddForce(acceleration);
 
             // Check if there is any rotation
             if (rotationChange != Quaternion.identity) 
@@ -91,40 +83,10 @@ public class TimeFrameAffectedObject : MonoBehaviour
                 // Apply Torque
                 objectRigidbody.AddTorque(torque);
             }
+
+
+
         }
 
-        if(isNewVelocityProtected)
-        {
-            // Position change
-            Vector3 posChange = transform.position - lastTransformValues.pos;
-
-            // Calculate last Velocity
-            Vector3 lastVelocity = posChange / Time.fixedDeltaTime;
-
-            // Calculate required acceleration to maintain current velocity
-            Vector3 acceleration = lastVelocity / Time.fixedDeltaTime;
-            //Debug.Log(lastTransformValues.pos);
-            //Debug.Log(posChange);
-            //Debug.Log(lastVelocity);
-            //
-            //Debug.Log(acceleration);
-            // Apply force
-            objectRigidbody.AddForce(acceleration);
-
-
-            // Rotation Change
-            Quaternion rotationChange = transform.rotation * Quaternion.Inverse(lastTransformValues.rotation);
-            //Debug.Log(rotationChange);
-            //Debug.Log(Quaternion.identity);
-            // Check if there is any rotation
-            if (rotationChange != Quaternion.identity)
-            {
-                // Calculate 
-                Vector3 torque = rotationChange.eulerAngles / Time.fixedDeltaTime;
-
-                // Apply Torque
-                objectRigidbody.AddTorque(torque);
-            }
-        }
     }
 }
