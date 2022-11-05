@@ -5,6 +5,9 @@ using TimeFrameClasses;
 
 public static class TimeFrameObjectManager 
 {
-    public delegate void InfoDelegate();
-    public static InfoDelegate InfoTime;
+    public delegate void InfoTimeDelegate();
+    public static InfoTimeDelegate InfoTime;
+
+    public delegate void InfoRewindEndedDelegate();
+    public static InfoRewindEndedDelegate RewindEnded;
 }

@@ -20,12 +20,21 @@ public class TimeManager : MonoBehaviour
 
     public float maximumSavesFixedTime = 5f;
 
-    public int maximumSavesFixedFrames = 300;
+    public float cooldownFixedTime = 5f;
 
-    public int cooldownFrames = 300;
+
+    private int maximumSavesFixedFrames;
+
+    private int cooldownFrames;
 
     public List<TimeFrame> timeFrames;
 
+    private float fixedUpdateFrames;
+
+
+
+    // Track of rewind ending
+    private bool wasLastFrameAtRewind = false;
 
     // First Recorded TimeFrame Index at the List
     // Implemented to make the TimeFrame addition process to O(1)
@@ -38,7 +47,12 @@ public class TimeManager : MonoBehaviour
     // Waits until timeFrame is filled again
     private int cooldownTimer;
 
-    public void RequestObjectInformation()
+    // How many frames we have recorded so far
+    // timeFrames.Count is not reliable since we implemented a system to reduce O(n) to O(1)
+    // So when the list is full, it won't give us how many frames we currently hold
+    private int frameCount = 0;
+
+    private void RequestObjectInformation()
     {
         // TimeFrameManager - Create A TimeFrame
         TimeFrameManager.CreateATimeFrame();
@@ -58,7 +72,8 @@ public class TimeManager : MonoBehaviour
             {
                 firstIndex = 0;
             }
-
+            
+            
         }
         else
         {
@@ -66,12 +81,40 @@ public class TimeManager : MonoBehaviour
             timeFrames.Add(currentTimeFrame);
         }
 
+        if(frameCount < maximumSavesFixedFrames)
+        {
+            frameCount++;
+        }
+
+    }
+
+    private void AtRewindEnded()
+    {
+        TimeFrameObjectManager.RewindEnded.Invoke();
     }
 
     // Start is called before the first frame update
     void Start()
     {
         Application.targetFrameRate = 120;
+
+        float radius = 10f;
+        Vector3 explosionPos =  new Vector3(3f, 6f, 3f);
+        Collider[] colliders = Physics.OverlapSphere(explosionPos, radius);
+        foreach (Collider hit in colliders)
+        {
+            Rigidbody rb = hit.GetComponent<Rigidbody>();
+        
+            if (rb != null)
+                rb.AddExplosionForce(500f, explosionPos, radius, 3.0F);
+        }
+    }
+
+    private void Awake()
+    {
+        fixedUpdateFrames = 1f / Time.fixedDeltaTime;
+        maximumSavesFixedFrames = (int)(maximumSavesFixedTime * fixedUpdateFrames);
+        cooldownFrames = (int)(cooldownFixedTime * fixedUpdateFrames);
     }
 
     private void OnEnable()
@@ -84,10 +127,9 @@ public class TimeManager : MonoBehaviour
         cooldownTimer = cooldownFrames;
     }
 
-    // Update is called once per frame
-    void Update()
+    void FixedUpdate()
     {
-        if (ActivateRewind && cooldownTimer <= 0 && rewindTimer < timeFrames.Count)
+        if (ActivateRewind && cooldownTimer <= 0 && rewindTimer < frameCount)
         {
             rewindTimer++;
             int lastIndex = firstIndex - rewindTimer;
@@ -98,25 +140,40 @@ public class TimeManager : MonoBehaviour
             TimeFrame currentTimeFrame = timeFrames[lastIndex];
             currentTimeFrame.Rewind();
 
-
             // Used all TimeFrames;
-            if (rewindTimer == timeFrames.Count)
+            if (rewindTimer == frameCount) 
             {
-                cooldownTimer = maximumSavesFixedFrames;
-                
-                // Reset the rewindTimer;
-                rewindTimer = 0;
-
-                // Clean the List
-                timeFrames.Clear();
-
+                // Reset Cooldown
+                cooldownTimer = cooldownFrames;
             }
+            wasLastFrameAtRewind = true;
         }
         else
         {
+            if (wasLastFrameAtRewind)
+            {
+                frameCount -= rewindTimer;
+                firstIndex -= rewindTimer;
+                if(firstIndex < 0)
+                {
+                    firstIndex += maximumSavesFixedFrames;
+                }
+                rewindTimer = 0;
+                wasLastFrameAtRewind = false;
+                AtRewindEnded();
+            }
             cooldownTimer = cooldownTimer <= 0 ? 0 : cooldownTimer - 1;
             RequestObjectInformation();
         }
-        Debug.Log(1f / Time.deltaTime);
+    }
+
+
+    // Update is called once per frame
+    void Update()
+    {
+        maximumSavesFixedFrames = (int)(maximumSavesFixedTime * fixedUpdateFrames);
+        cooldownFrames = (int)(cooldownFixedTime * fixedUpdateFrames);
+        //Debug.Log(1f / Time.deltaTime);
+        //Debug.Log(maximumSavesFixedFrames);
     }
 }

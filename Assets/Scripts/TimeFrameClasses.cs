@@ -19,12 +19,16 @@ namespace TimeFrameClasses
 
     public class ObjectInformation
     {
+        public TimeFrameAffectedObject obj;
+        public Rigidbody objectRigidbody;
         public Transform objectTransform;
         public TransformValues transformValues;
 
-        public ObjectInformation(Transform transform)
+        public ObjectInformation(Transform transform, Rigidbody rigidbody, TimeFrameAffectedObject timeFrameAffectedObject)
         {
             objectTransform = transform;
+            objectRigidbody = rigidbody;
+            obj = timeFrameAffectedObject;
             transformValues = new TransformValues(transform);
         }
 
@@ -32,6 +36,11 @@ namespace TimeFrameClasses
         {
             if(objectTransform is not null)
             {
+                objectRigidbody.isKinematic = true;
+                if (obj.isInitialVelocityProtected || obj.isNewVelocityProtected)
+                {
+                    obj.lastTransformValues = new TransformValues(objectTransform);
+                }
                 objectTransform.position = transformValues.pos;
                 objectTransform.rotation = transformValues.rotation;
                 objectTransform.localScale = transformValues.scale;
